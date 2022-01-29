@@ -1,0 +1,60 @@
+---
+title: "Assignment1 Final"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+##Dataset source picked from Kaggle.com of Covid Variants https://www.kaggle.com/pavan9065/covid-variants
+
+#getwd()
+#setwd("/Users/ankithdasu/Desktop/Spring 2022/Fundamentals of Machine Learning/Assignment 1/Data")
+
+##Loading CSV file to a dataframe
+
+```{r}
+##Data Frame Name: Which has data in it: Initialise it
+##dataframe can be initialized using = or <- 
+
+getwd()
+setwd("/Users/ankithdasu/Desktop/Spring 2022/Fundamentals of Machine Learning/Assignment 1/Data")
+Covid_V1 <- read.csv("covid-variants1.csv")
+#select dataframe name and cmdenter to see successful load
+```
+
+##Descriptive Statistics for Quantitative and Categorical Variables in the data
+
+```{r}
+##For Quantitative Variable
+mean(Covid_V1$num_sequences_total)
+summary(Covid_V1$num_sequences_total)
+
+##For Categorical Variable
+table(Covid_V1$location)
+summary(Covid_V1$location)
+```
+
+##Transformation of variables
+
+```{r results='hide'}
+##log transformation
+log(Covid_V1$num_sequences)
+```
+
+##Plotting of the data
+
+```{r}
+##Plot
+plot(Covid_V1$num_sequences)
+
+##Scatter Plot
+plot(Covid_V1$num_sequences,Covid_V1$num_sequences_total,main = "Sample ScatterPlot", xlim = c(1,50), ylim = c(1,50))
+
+```
+
+##Completed
+
