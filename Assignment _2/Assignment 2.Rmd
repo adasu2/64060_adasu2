@@ -1,0 +1,181 @@
+---
+title: "Assignment 2"
+output: pdf_document
+---
+
+```{r setup, include=FALSE,message =FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+##Read the Csv and create a data frame
+```{r}
+library(caret)
+library(e1071)
+library(dplyr)
+Bankdata <- read.csv("UniversalBank.csv")
+```
+
+##Exploratory data analysis--checking structure summary data distribution --plot 
+```{r}
+str(Bankdata) # To check the structure of the data 
+colSums(is.na(Bankdata)) # To check Missing values in the dataset 
+summary(Bankdata)
+
+```
+
+
+#Transforming variables and introducing dummy variables. Sample usage of dummy to check the implementation 
+```{r}
+
+library(dummies)
+library(dplyr)
+Bankdata$Education = as.factor(Bankdata$Education) # splitting the education into 3 parts
+
+dummybank <- dummy.data.frame(select(Bankdata,-c(ZIP.Code,ID))) # removing the ZIP.Code and ID from the dummy data
+dummybank$Personal.Loan <- as.factor(dummybank$Personal.Loan) ## as.factor is used when you want to convert the data type of a variable to a factor/categorical variable.
+```
+
+
+##Split the data into  training and validation
+
+```{r}
+
+set.seed(123)
+
+Train_index <- createDataPartition(dummybank$Personal.Loan, p=.6,
+                                  list = FALSE,
+                                  times = 1)
+
+Training.df=dummybank[Train_index,] #Assigning the Train_index to the training data frame
+
+Validation.df=dummybank[-Train_index,]  #Assigning the rest(Validation_index) to the validation data frame 
+
+Conditions = data.frame(Age = 40, Experience = 10, Income = 84, Family = 2, CCAvg = 2, Education1 = 0, Education2 =1, Education3 = 0, Mortgage = 0, Securities.Account = 0, CD.Account = 0, Online = 1,CreditCard = 1)
+
+
+Normal <- preProcess(Training.df,method=c("center","scale")) #normalizing the data 
+Training.df <- predict(Normal,Training.df)   # prediction using normalized data into training model 
+Validation.df <-predict(Normal,Validation.df) ## predicting normalized data with validation data frame
+Conditions = predict(Normal,Conditions)  # predicting normalized data with conditions which are given
+```
+
+
+```{r}
+library(caret)
+library(class)
+library(ISLR)
+K1 <- knn(train = Training.df[,-c(10)],test = Conditions, cl = Training.df[,c(10)],k=1, prob=TRUE) # applying the knn algorithm
+
+Knnattributes <- attributes(K1)  #determining the attributes
+Knnattributes[1]
+Knnattributes[3]
+```
+
+
+
+
+Q2) What is a choice of k that balances between overfitting and ignoring the predictor
+information?
+
+```{r}
+accuracy.df <- data.frame(k = seq(1,5,1), accuracy = rep(0,5)) # data frame accuracy to check the k values from 1 to 5
+for(i in 1:5)  #i in 1:5, is a recurssive login from 1 to 5.
+{
+K2 <- knn(train = Training.df[,-10],test = Validation.df[,-10], cl = Training.df[,10],
+k=i, prob=TRUE)
+accuracy.df[i, 2] <- confusionMatrix(K2, Validation.df[,10])$overall[1] # for loop to generate accuracy for k values from 1 to 5
+}
+accuracy.df # k=1 has the highest accuracy
+```
+
+
+Q3) Show the confusion matrix for the validation data that results from using the best k.
+
+```{r}
+K3<- knn(train = Training.df[,-10],test = Validation.df[,-10], cl = Training.df[,10],
+k=1, prob=TRUE) # using validation data we are showing confusion matrix with 96 % accuracy
+confusionMatrix(K3, Validation.df[,10]) 
+```
+
+
+Q4) Consider the following customer: Age = 40, Experience = 10, Income = 84, Family = 2,
+CCAvg = 2, Education_1 = 0, Education_2 = 1, Education_3 = 0, Mortgage = 0, Securities
+Account = 0, CD Account = 0, Online = 1 and Credit Card = 1. Classify the customer using the
+best k.
+
+```{r}
+Customer123 =data.frame(Age = (40), Experience = (10), Income = (84), Family
+= (2), CCAvg = (2), Education1 = (0), Education2 = (1), Education3 = (0),
+Mortgage = (0), Securities.Account = (0), CD.Account = (0), Online = (1),
+CreditCard = (1))
+K4 <- knn(train = Training.df[,-10],test = Customer123, cl = Training.df[,10], k=3,
+prob=TRUE) # best value of K is 3
+
+Knnattributes <- attributes(K4) 
+Knnattributes[3]
+
+K4
+```
+
+
+
+Q5) Repartition the data, this time into training, validation, and test sets (50% : 30% : 20%).
+Apply the k-NN method with the k chosen above. Compare the confusion matrix of the test
+set with that of the training and validation sets. Comment on the differences and their
+reason.
+
+```{r message =FALSE, warning=FALSE}
+set.seed(1123)
+Train_index1 <- sample(rownames(dummybank), 0.5*dim(dummybank)[1]) ## 50% of the data partition
+set.seed(123)
+valid.index <- sample(setdiff(rownames(dummybank),Train_index1),0.3*dim(dummybank)[1]) #30 % validation
+test.index = setdiff(rownames(dummybank), union(Train_index1, valid.index)) #remaining 20 % in test data
+
+
+# loading index values to respective data frame.
+Training.df1 <- dummybank[Train_index1, ]
+Validation.df1 <- dummybank[valid.index, ]
+test.df <- dummybank[test.index, ]
+
+Normalized <- preProcess(Training.df1, method=c("center", "scale"))
+Training.df1 <- predict(Normalized, Training.df1) #predicting train data with nomalized data
+Validation.df1 <- predict(Normalized, Validation.df1) #predicting Valid data with nomalized data
+test.df <- predict(Normalized, test.df) # predicting Test data with nomalized data
+```
+
+
+```{r}
+#applying Knn Algorithm for test, train, valid sets
+TestingKnnAlg <- knn(train = Training.df1[,-c(10)],test = test.df[,-c(10)], cl =
+Training.df1[,10], k=6, prob=TRUE)
+
+ValidatingKnnAlg <- knn(train = Training.df1[,-c(10)],test = Validation.df1[,-c(10)], cl = Training.df1[,10], k=5, prob=TRUE)
+
+TrainKnnAlg <- knn(train = Training.df1[,-c(10)],test = Training.df1[,-c(10)], cl = Training.df1[,10], k=5, prob=TRUE)
+```
+
+# confusion matrix for test, train,valid which has knn algorithm applied to it
+
+```{r}
+
+# Matrix for predicted values and actual values for Testing 
+confusionMatrix(TestingKnnAlg, test.df[,10])
+```
+
+
+```{r}
+# Matrix for predicted values and actual values for validation
+confusionMatrix(ValidatingKnnAlg, Validation.df1[,10])
+```
+
+
+```{r}
+# Matrix for predicted values and actual values for Training
+confusionMatrix(TrainKnnAlg, Training.df1[,10])
+```
+
+
+
+
